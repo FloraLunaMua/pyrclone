@@ -1,24 +1,26 @@
-from __future__ import  annotations
-from typing import Union, Dict, Any, List, Iterable
+from __future__ import annotations
+from typing import Union, Dict, List, Iterable
 from enum import Enum
 from datetime import datetime
 from dataclasses import dataclass
 import re
 
+
 class RCJobStatus(Enum):
-    NOT_STARTED:int = -1
-    IN_PROGRESS:int = 0
-    FINISHED:int = 1
-    FAILED:int = 2
+    NOT_STARTED: int = -1
+    IN_PROGRESS: int = 0
+    FINISHED: int = 1
+    FAILED: int = 2
+
 
 def _fix_isotime(time: str) -> str:
-    '''
+    """
     The ISO time returned by rclone (at least when tested on MEGA) returns a format that datetime doesn't like
-    This function fixes these issues
+    this function fixes these issues
 
     :param time: a string with a ISO timestamp
     :return: A string with a re-formatted timestamp
-    '''
+    """
 
     # Defines a regular expression to find the inconsistencies
     pattern = r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]*)?(\+[0-9]{2}:[0-9]{2}|[a-zA-Z])?"
@@ -35,118 +37,122 @@ def _fix_isotime(time: str) -> str:
     # Returns a new string with fixed timestamp
     return time
 
+
 @dataclass
 class RCloneJob:
-    '''
-    This class contains information related to any job
-    '''
+    """
+    this class contains information related to any job
+    """
 
     id: int
-    duration:float
+    duration: float
     startTime: datetime
     endTime: Union[datetime | None]
     error: str = ""
     output: Union[str | None] = None
-    finished:bool=False
-    success:bool=False
-    stats:Union[RCloneJobStats|None] = None
+    finished: bool = False
+    success: bool = False
+    stats: Union[RCloneJobStats | None] = None
 
     @property
-    def status(this) -> RCJobStatus:
-        if (not this.finished) and (not this.success):
-            return RCJobStatus.IN_PROGRESS if this.stats is not None else RCJobStatus.NOT_STARTED
-        elif this.success:
+    def status(self) -> RCJobStatus:
+        if (not self.finished) and (not self.success):
+            return RCJobStatus.IN_PROGRESS if self.stats is not None else RCJobStatus.NOT_STARTED
+        elif self.success:
             return RCJobStatus.FINISHED
         else:
             return RCJobStatus.FAILED
 
     @classmethod
-    def _get_data_from_json(cls, json_data:Dict) -> Dict[str|Any]:
+    def _get_data_from_json(cls, json_data: Dict):
         return {
-        "id": json_data['id'],
-        "duration": json_data['duration'],
-        "startTime":  datetime.fromisoformat(_fix_isotime(json_data['startTime'])),
-        "endTime":  datetime.fromisoformat(_fix_isotime(json_data['endTime'])) if json_data['endTime'] != 0 else None,
-        "error":  json_data['error'],
-        "output":  json_data['output'],
-        "success":  json_data['success'],
-        "finished":  json_data['finished']
+            "id": json_data['id'],
+            "duration": json_data['duration'],
+            "startTime": datetime.fromisoformat(_fix_isotime(json_data['startTime'])),
+            "endTime": datetime.fromisoformat(_fix_isotime(json_data['endTime'])) if json_data[
+                                                                                         'endTime'] != 0 else None,
+            "error": json_data['error'],
+            "output": json_data['output'],
+            "success": json_data['success'],
+            "finished": json_data['finished']
         }
+
     @classmethod
-    def from_json(cls, json_data:Dict) -> RCloneJob:
+    def from_json(cls, json_data: Dict) -> RCloneJob:
         d = cls._get_data_from_json(json_data)
         return cls(**d)
+
 
 @dataclass(frozen=True)
 class RCloneJobStats:
-    '''
-    This class collects detailed information about a job that is transferring a file
-    '''
+    """
+    this class collects detailed information about a job that is transferring a file
+    """
 
-    transferred_bytes:int = 0
-    filename:str = ""
-    size:int = 0
-    speed:float = 0.
-    average_speed:float = 0.
+    transferred_bytes: int = 0
+    filename: str = ""
+    size: int = 0
+    speed: float = 0.
+    average_speed: float = 0.
 
     @property
-    def percentage(this)->float:
-        return this.transferred_bytes/this.size
+    def percentage(self) -> float:
+        return self.transferred_bytes / self.size
 
     @classmethod
-    def from_json(cls, json_data:Dict) -> RCloneJobStats:
+    def from_json(cls, json_data: Dict) -> RCloneJobStats:
         d = cls._get_data_from_json(json_data)
         return cls(**d)
 
     @classmethod
-    def _get_data_from_json(cls, json_data: Dict) -> Dict[str | Any]:
+    def _get_data_from_json(cls, json_data: Dict):
         return {
-            "transferred_bytes" : json_data['bytes'],
-            "filename" : json_data['name'],
-            "size" : json_data['size'],
-            "speed" : json_data['speed'],
-            "average_speed" : json_data['speedAvg'],
+            "transferred_bytes": json_data['bytes'],
+            "filename": json_data['name'],
+            "size": json_data['size'],
+            "speed": json_data['speed'],
+            "average_speed": json_data['speedAvg'],
         }
 
 
 class RCloneTransferDetails:
-    '''
-    This object collects the transfer information of many jobs, making easy to gather global information
-    '''
+    """
+    this object collects the transfer information of many jobs, making easy to gather global information
+    """
 
-    def __init__(this, jobs:List[RCloneJobStats]):
-        this._jobs=jobs
+    def __init__(self, jobs: List[RCloneJobStats]):
+        self._jobs = jobs
 
-    def __len__(this) -> int:
-        return len(this._jobs)
-    def __getitem__(this, index:int) -> RCloneJobStats:
-        '''
+    def __len__(self) -> int:
+        return len(self._jobs)
+
+    def __getitem__(self, index: int) -> RCloneJobStats:
+        """
         Return the job at the provided position
         :param index: Job index
         :return: A RCloneTransferJob
-        '''
+        """
 
-        return this._jobs[index]
+        return self._jobs[index]
 
-    def __iter__(this) -> Iterable[RCloneJobStats]:
-        return iter(this._jobs)
+    def __iter__(self) -> Iterable[RCloneJobStats]:
+        return iter(self._jobs)
 
     @property
-    def percentage(this) -> float:
-
+    def percentage(self) -> float:
         transf = 0
         total = 0
 
-        for job in this:
-            transf+=job.transferred_bytes
-            total+=job.size
+        for job in self:
+            transf += job.transferred_bytes
+            total += job.size
 
-        return transf/total
-
-    @property
-    def total_transfer_speed(this) -> float:
-        return sum([job.speed for job in this])
+        return transf / total
 
     @property
-    def total_average_transfer_speed(this) -> float:
-        return sum([job.average_speed for job in this])
+    def total_transfer_speed(self) -> float:
+        return sum([job.speed for job in self])
+
+    @property
+    def total_average_transfer_speed(self) -> float:
+        return sum([job.average_speed for job in self])
