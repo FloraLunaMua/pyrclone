@@ -93,7 +93,7 @@ class Rclone:
                 return json.loads(content)
             else:
                 raise ClientResponseError(response.request_info, response.history, message=content)
-    # 命令区
+
     async def ls(self, root: str, path: str, recursive: bool = False) -> Any:
         """
         Return the list of files within root at the given Path
@@ -248,6 +248,28 @@ class Rclone:
         self._transferring_jobs.append(id)
 
         return id
+
+    async def copy(self,srcFs: str, dstFs: str,createEmptySrcDirs=True):
+        """
+        srcFs - 远程名称字符串，例如源的“drive：src”
+        dstFs - 远程名称字符串，例如目标的“drive：dst”
+        createEmptySrcDirs - 如果设置了，则在目标上创建空的 src 目录
+        _async - 异步操作允许
+        """
+        request_data = {
+            "srcFs": src_root,
+            "dstFs": dst_root,
+            "createEmptySrcDirs": createEmptySrcDirs,
+            "_async": "true"
+        }
+        response = await self.make_request("sync", "copy", **request_data)
+
+        id = response['jobid']
+        self._transferring_jobs.append(id)
+
+        return id
+
+
 
     async def rmdir(self, root: str, path: str, *, asynch=False) -> Self:
         """
