@@ -1,1 +1,1 @@
-from .pyrclone import rclone, RCJobStatus
+from .pyrclone import Rclone, RCJobStatus
