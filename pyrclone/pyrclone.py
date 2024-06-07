@@ -13,8 +13,8 @@ import os
 
 class Rclone:
 
-    def __init__(self, *,
-                 cmd: str = "rclone",
+    def __init__(self,
+                 cmd: str,
                  address: str = "localhost",
                  port: int = 5572,
                  authentication: bool = False,
@@ -96,15 +96,15 @@ class Rclone:
 
     async def ls(self, root: str, path: str, recursive: bool = False) -> Any:
         """
-        Return the list of files within root at the given Path
+        返回根目录中给定路径下的文件列表
 
-        Raises `FileNotFoundError` if the root/path doesn't exist
-        Raises ClientResponseError for any issues related to client/server connection
+        如果根/路径不存在，则引发 "FileNotFoundError
+        如果出现与客户端/服务器连接相关的任何问题，则引发 ClientResponseError 错误
 
-        :param root: An RClone remote or a local path
-        :param path: a path relative from root
-        :param recursive: If TRUE, runs a recursive listing of all files in root/path
-        :return: A list containing the content of the directory
+        :param root： RClone远程或本地路径
+        :param path：从根开始的相对路径
+        :param recursive：如果为 “true”，运行根/路径中所有文件的递归列表
+        :return： 包含目录内容的列表
         """
 
         opt = {}
@@ -146,7 +146,7 @@ class Rclone:
                                            "about",
                                            fs=root,
                                            opt=opt)
-            return data['free']
+            return data
 
         except ClientResponseError as err:
             if "directory not found" in err.message:
@@ -477,7 +477,7 @@ class Rclone:
         # zombie process (at least, in a POSIX environment).
         self._running_server.communicate()
 
-        self._running_server = None
+        self._running_server = Nones
 
         return self
 
